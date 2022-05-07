@@ -1,0 +1,122 @@
+#!/bin/bash
+
+# Generation R analyses
+# Within GENA, navigate to your project folder and run this script using the command qsub-bin-long Rscript --vanilla this_script.txt
+# SCRIPT 4, what this script does:
+#   - Merge the results files with the information on imputation quality, HWE etc.
+#   - Filter out sites as recommended in analysis plan
+#   - Create final results files
+# Note that participant exclusion was done earlier (per-person call rate <95%, PCA outliers, sex mismatches, excessive homoz., non-Europeans, non-complete data)
+
+# Load packages and set directory
+library(data.table) # To read large datasets
+library(psych) # for descriptives
+library(tidyverse) # for subsetting
+
+main_results <- "./results/mainanalysis_autosomal.csv.gz"
+output_main  <- "GWAS_output.txt" # ==> change here for more informative name
+
+results_girls <- "./results/supp_girls_autosomal.csv.gz"
+output_girls  <- "GWAS-females_output.txt" # ==> change here for more informative name
+
+results_boys <- "./results/supp_boys_autosomal.csv.gz"
+output_boys  <- "GWAS-males_output.txt" # ==> change here for more informative name
+
+results_girlsX <- "./results/mainanalysis/chrXfemale.SingleScore.assoc.gz"
+output_girlsX  <- "GWAS-femalesX_output.txt" # ==> change here for more informative name
+
+results_boysX <- "./results/mainanalysis/chrXmale.SingleScore.assoc.gz"
+output_boysX  <- "GWAS-malesX_output.txt" # ==> change here for more informative name
+
+# Let' get started
+message("Analyses run on: ", format(Sys.Date(), "%d/%m/%Y"), "\n")
+
+###### GET THE DESCRIPTIVES #####################################################
+
+# Read in the imputation quality 
+rsq <- fread("./sourcefiles/rsq.txt.gz")
+names(rsq) <- c("Markername","REF","ALT","Alt_Frq","MAF","AvgCall","Rsq","Genotyped","LooRsq","EmpR","EmpRsq","Dose0","Dose1")
+rsq <- rsq[,.(Markername, REF, ALT, AvgCall, Rsq, Genotyped, MAF)]
+message("Imputation quality file read, rows: ", nrow(rsq))
+
+# Read in the HWE information
+hwe <- fread("./sourcefiles/GenR.hwe.gz")
+hwe <- hwe[hwe$TEST=="ALL",.(SNP,P)]
+message("HWE info file read, rows: ", nrow(hwe))
+
+# Read in the map file
+# This file is used to assign RS IDs to the SNPs, source: http://www.haplotype-reference-consortium.org/site 
+map <- fread("./resources/HRC.r1-1.GRCh37.wgs.mac5.sites.tab.gz")
+names(map) <- c("CHROM","POS","Rsid","REF","ALT","AC","AN","AF","AC_EXCLUDING_1000G","AN_EXCLUDING_1000G","AF_EXCLUDING_1000G","AA" )
+map$Markername <- paste(map$CHROM, map$POS, sep = ":")
+map <- map[,.(Markername, Rsid, REF, ALT)]
+message("RS-IDs to SNP map file read, rows: ", nrow(map))
+
+###################################################################################
+
+filter_save <- function(input, output) {
+        # Read in GWAS results file
+        original <- fread(input)
+        message("GWAS results file read, rows: ", nrow(original))
+        # Remove any results for X chromosome
+        new <- original %>% filter(!(CHROM=="X")) 
+        message("After removing results for X chromosome: ", nrow(new))
+        new <- new %>% filter(!(AF==0)) # Remove monoallelic SNPs
+        message("After removing monoallelic SNPs: ", nrow(new))
+        new$Markername <- paste(new$CHROM, new$POS, sep = ":") # Create a column with markernames following the format Chr:Pos
+        
+        # Merge and annotate the results
+        message("Merging...")
+        new <- merge(new, map, by = c("Markername","REF","ALT"), all.x = T) # Merge GWAS results with RS IDs
+        new <- merge(new, hwe, by.x = "Rsid", by.y = "SNP", all.x = T) # Add HWE info
+        final <- merge(new, rsq, by = c("Markername","REF","ALT"), all.x = T) # Add imputation quality info ### CHANGE THIS, NEED INFO SCORE, NOT R2
+        message("Merging completed, rows: ", nrow(final))
+        
+        # Include only the required SNPs (==> change according to analysis plan)
+        final <- final %>% filter( (P>0.000001 & Genotyped=="Genotyped") | Genotyped=="Imputed") # SNPs with HWE P < 1*10^-6 (only applicable to genotyped snps)
+        message("After excluding SNPs with HWE P < 1*10^-6 (only applicable to genotyped snps), nrow: ", nrow(final))
+        final <- final %>% filter(MAF>0.005) # SNPs with minor allele freq < 0.005 (i.e. 0.5%)
+        message("After excluding SNPs with minor allele freq < 0.005 (i.e. 0.5%), nrow: ", nrow(final))
+        final <- final %>% filter(AvgCall>0.98) # call-rate < 98%
+        message("After excluding SNPs call rate < 98%, nrow: ", nrow(final))
+        final <- final %>% filter(Rsq>0.4) # Imputation info score < 0.4
+        message("After excluding SNPs with imputation score < 0.4, nrow: ", nrow(final))
+        
+        # Add strand information (for GenR3 this is positive/forward strand)
+        final$strand <- '+'
+        
+        # Have a look at the results.
+        message("Sample = ", min(final$N_INFORMATIVE))
+        message("Minimum MAF = ", min(final$MAF), " (should be >0.005)")
+        message("Minimum R2 = ", min(final$Rsq), " (should be >0.4)")
+        message("Minimum call-rate = ", min(final$AvgCall), " (should be >0.98)")
+        message(sum(is.na(final$Rsid)), " sites don't have an Rsid")
+        message("Check that only autosomal included: " unique(final$CHROM))
+        message("Minimum p-value = ", min(final$PVALUE, na.rm=T)) # just curiosity
+
+        # Include only the required columns and save
+        # final <- select(final, c(Markername, CHROM, POS, ALT, REF, AF, EFFECT, SE, PVALUE, N_INFORMATIVE, Rsq, Rsid, Genotyped)) # ==> CHANGE THIS
+        final <- select(final,c(Rsid, CHROM, POS, REF, ALT, strand, EFFECT, SE, PVALUE, AF, N_INFORMATIVE, Rsq))
+        names(final) <- c("SNPID", "chr", "position", "effect_allele", "other_allele", "strand_genome", "BETA", "SE", "P", "EAF", "n_total", "info_imp") # ==> CHANGE THIS
+        message("Saving...") 
+        write.table(final, file = output, quote = F, row.names = F)
+        system("gzip -f *.txt")
+	message("Done!\n")
+}
+
+############### MAIN ANALYSIS: AUTOSOMAL, ALL PARTICIPANTS ##################
+message("-------- Running main analysis: autosomal, all participants --------")
+
+filter_save(main_results, output_main)
+
+############### SUPPL ANALYSIS: AUTOSOMAL, GIRLS ONLY #######################
+message("-------- Running supplemetary analysis: autosomal, girls only --------")
+
+filter_save(results_girls, output_girls)
+
+############## SUPPL ANALYSIS: AUTOSOMAL, BOYS ONLY #########################
+message("-------- Running supplemetary analysis: autosomal, boys only --------")
+
+filter_save(results_boys, output_boys)
+
+message("-------- THE END ---------")
