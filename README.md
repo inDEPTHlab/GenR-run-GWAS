@@ -15,7 +15,7 @@ Type `gena.erasmusmc.nl` as a Remote host and specify your **microsection number
 
 Let’s have a look at what’s inside (type `ls`). You should see a folder called `GENR3`, that’s containing the genetic files you are going to need. If you don’t see it yet, write an email to data management (datamanagement@erasmusmc.nl) with Marijn in cc. 
 
-> **Note: GenR3 or GenR4 release?**
+> **<ins>Note</ins>: GenR3 or GenR4 release?**
 For this tutorial I will be using GenR3, but there is also another more recent release, GenR4. infomation about these two samples can be found on the info wiki. 
 
 ### Tip #1: keep things tidy!
@@ -63,7 +63,7 @@ The first important thing is that your dataset should contain the following colu
 These should be the *first columns* in the phenotype files so, as I am selecting participants with complete genetic data, phenotype and covariates (in this example, only sex and age), I will also reorder the columns appropriatly. 
 Now this should be your analytical sample. You can check out some **descriptives** (making sure all looks right) and congratulate yourself for completing the first step. 
 
-If all went well, the script will save a `**phenotype.ped**` and a `**covariates.ped**` file into our `sourcefiles` folder. <u>Note</u>: if you need to run supplementary analyses using other samples, save a phenotype file for each analytical sample. For example, since I am going to stratify my analyses by sex, I also save a `phenotype_girls.ped` and a `phenotype_boys.ped` file. 
+If all went well, the script will save a `phenotype.ped` and a `covariates.ped` file into our `sourcefiles` folder. <ins>Note</ins>: if you need to run supplementary analyses using other samples, save a phenotype file for each analytical sample. For example, since I am going to stratify my analyses by sex, I also save a `phenotype_girls.ped` and a `phenotype_boys.ped` file. 
 
 ## 2 | Start running the GWAS analyses
 Ok, enough fooling around, time to run the actual analyses, using our second script [**2_Rvtest.sh**](https://github.com/SereDef/GenR-run-GWAS/blob/main/2_Rvtest.sh).
@@ -87,9 +87,9 @@ In a nutshel, what this does is looping through all chromosomes (i.e., `.vcf` fi
 
 Ok, this may take some time, so you can allow yourself a nice walk / a ~20 min Netflix episolde at this point. You can come back and check the status of your analyses using the command `qstat`. This will print out a list of the *jobs* that are currently being run (`r`) or are waiting in the que (`wq`). If the output of `qstat` is empty you are all done. 
 
-<u>Note</u>: analyses have the bad habit of having something wrong with them sometimes. Make sure you inspect the **log files** for any shady warnings going on. For each *job* you have submitted, you will find a couple of those in your project folder: `rvtest.e[...]` and `rvtest.o[...]`. The latter is not super useful but it does provide some contact and websites where you can check the rvtests documentation (although probably faster way to get there is to google rvtest...). Open the first ("e") log file using `cat rvtest.e*somenumber*` (*tip*: if you hit `shift` computers will fill in the numbers for you). If anything goes wrong, this is were you are going to know more about it.
+<ins>Note</ins>: analyses have the bad habit of having something wrong with them sometimes. Make sure you inspect the **log files** for any shady warnings going on. For each *job* you have submitted, you will find a couple of those in your project folder: `rvtest.e[...]` and `rvtest.o[...]`. The latter is not super useful but it does provide some contact and websites where you can check the rvtests documentation (although probably faster way to get there is to google rvtest...). Open the first ("e") log file using `cat rvtest.e*somenumber*` (*tip*: if you hit `shift` computers will fill in the numbers for you). If anything goes wrong, this is were you are going to know more about it.
 
-## 3.1 | Get HWE and imputation quality (R<sub>2</sub>) information 
+## 3.1 | Get HWE and imputation quality (R<sup>2</sup>) information 
 Next, we need to retrieve some important information on Hardy-Weinburgh Equilibium and imputation quality. And that is what [**3_CollectGenotypeInfo.sh**](https://github.com/SereDef/GenR-run-GWAS/blob/main/3_CollectGenotypeInfo.sh) is all about. In your project folder paste the command: 
 ```
 plink --bfile ~/GENR3/Genotyped/GENR3-2012 --hardy --out /sourcefiles/GenR 
