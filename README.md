@@ -1,7 +1,7 @@
 # How to run a GWAS in Generation R (for dummies)
-Hi, you are about to enter the magic circle of people that can run a GWAS, welcome. You are going to need a little bit of UNIX witchery for this one, but if that sounds uninviting, no worries, you will have me (…and google) on your side every step of the way. We are going to use R for phenotype preparation and Rvtest to run the actual GWAS, but first things first.
+Hi, you are about to enter the magic circle of people that can run a GWAS, welcome. You are going to need a little bit of UNIX witchery for this one, but if that sounds uninviting, no worries, you will have me (…and google) on your side every step of the way. We are going to use `R` for phenotype preparation and `Rvtest` to run the actual GWAS, but first things first:
 
-## 0 | Set up access to GENA and to the genetic / phenotype data
+## 0    | Set up access to GENA and to the genetic / phenotype data
 You will need access to our **GENA** server where the genotype files are stored, and of course also permission to access the phenotype data. So, start by sending some emails. Marijn Verkerk (m.verkerk@erasmusmc.nl) will help you create an account on GENA. This will be accessible via remote shell (SSH) using your microsection credentials, but you can also ask for permission to use `MobaXterm` (a SSH client) on your SOM or Mijnwerkplek environment. This will make access a little bit easier and I am going to assume you are using MobaXterm in this tutorial. 
 
 So, once the app becomes available you can launch it.
@@ -15,7 +15,7 @@ Type `gena.erasmusmc.nl` as a Remote host and specify your **microsection number
 
 Let’s have a look at what’s inside (type `ls`). You should see a folder called `GENR3`, that’s containing the genetic files you are going to need. If you don’t see it yet, write an email to data management (datamanagement@erasmusmc.nl) with Marijn in cc. 
 
-> **<ins>Note</ins>: GenR3 or GenR4 release?**
+> <ins>Note</ins>: **GenR3 or GenR4 release?**
 For this tutorial I will be using GenR3, but there is also another more recent release, GenR4. infomation about these two samples can be found on the info wiki. 
 
 ### Tip #1: keep things tidy!
@@ -42,7 +42,7 @@ This is where `MobaXterm` will make your life a bit easier. You can use it to im
 Now let’s nose around the genetic data a little (type `cd ~/GENR3` to move inside the GENR3 folder and `ls` to see what’s inside). For example, we are going to use the data in `Imputed/1000G_PhaseIIIv5/`. Here you will find the `*.vcf` and the `*.info` files for all chromosomes. You can visualize these using e.g., `zcat chr1.dose.vcf.gz | more` (hit `q` when you are done nosing around the vcf file) or `zcat chr1.dose.vcf.gz | head` (to visualize only the first 10 rows of the file). Also, `bcftools query -l chr1.dose.vcf.gz` will list all the participants in the file.
 > **So many imputation panels ... which one do I choose?**
 
-## 1 | Construct your phenotype & covariate files
+## 1    | Construct your phenotype & covariate files
 While you are waiting for access to the server to be arranged, you can have some fun preparing the phenotype and covariates. You can download most of the Generation R data from the [data wiki](). Together with the files containing your outcome variables of interest you should probably download the most recent **ALLGENERALDATA[...].sav**, and **PCA_Selection_GWAv3[...].sav** or **PCA_Selection_GWAv4[...].sav** files (these refer to GenR3 and GenR4 respectively). 
 
 You can merge and manipulate these using R or any other tool you like and save a dataset (I am going to call it **“phenotype_data.csv”**) that contains the following columns:
@@ -65,7 +65,7 @@ Now this should be your analytical sample. You can check out some **descriptives
 
 If all went well, the script will save a `phenotype.ped` and a `covariates.ped` file into our `sourcefiles` folder. <ins>Note</ins>: if you need to run supplementary analyses using other samples, save a phenotype file for each analytical sample. For example, since I am going to stratify my analyses by sex, I also save a `phenotype_girls.ped` and a `phenotype_boys.ped` file. 
 
-## 2 | Start running the GWAS analyses
+## 2    | Start running the GWAS analyses
 Ok, enough fooling around, time to run the actual analyses, using our second script [**2_Rvtest.sh**](https://github.com/SereDef/GenR-run-GWAS/blob/main/2_Rvtest.sh).
 We will run the analyses, i.e., `phenotype ~ SNP + covariates` one chromosome at the time. To do so, we need to submit each *job* (i.e., chromosome analysis) to the *que*, using the `qsub` command. 
 First, make sure you are inside your project directory and then you can paste the commands from script 2 into the command window (to paste, just right click will do). 
@@ -89,7 +89,7 @@ Ok, this may take some time, so you can allow yourself a nice walk / a ~20 min N
 
 <ins>Note</ins>: analyses have the bad habit of having something wrong with them sometimes. Make sure you inspect the **log files** for any shady warnings going on. For each *job* you have submitted, you will find a couple of those in your project folder: `rvtest.e[...]` and `rvtest.o[...]`. The latter is not super useful but it does provide some contact and websites where you can check the rvtests documentation (although probably faster way to get there is to google rvtest...). Open the first ("e") log file using `cat rvtest.e*somenumber*` (*tip*: if you hit `shift` computers will fill in the numbers for you). If anything goes wrong, this is were you are going to know more about it.
 
-## 3.1 | Get HWE and imputation quality (R<sup>2</sup>) information 
+## 3.1  | Get HWE and imputation quality (R<sup>2</sup>) information 
 Next, we need to retrieve some important information on Hardy-Weinburgh Equilibium and imputation quality. And that is what [**3_CollectGenotypeInfo.sh**](https://github.com/SereDef/GenR-run-GWAS/blob/main/3_CollectGenotypeInfo.sh) is all about. In your project folder paste the command: 
 ```
 plink --bfile ~/GENR3/Genotyped/GENR3-2012 --hardy --out /sourcefiles/GenR 
@@ -111,7 +111,7 @@ gzip sourcefiles/rsq.txt
 ```
 > **How does imputation work?**
 
-## 3.2 | Merge results 
+## 3.2  | Merge results 
 Finally, you may want to merge all of these chromosome-specific result files into a **genome-wide** file that is easier to use and share. This is what the last part of [3_CollectGenotypeInfo.sh](https://github.com/SereDef/GenR-run-GWAS/blob/main/3_CollectGenotypeInfo.sh) does. For example let's merge all results from the main analyses into a `main_autosomal.csv` results file:
 ```
 gzip -r results/mainanalysis/
@@ -123,7 +123,7 @@ done
 gzip results/main_autosomal.csv
 ```
 
-## 4 | Create the final results file 
+## 4    | Create the final results file 
 Ok we are really nearly done! But we still need to combine our results with information on imputation quality, HWE etc, filter out sites as specified in the analysis plan and save the final results files. We will be doing this using the final [**4_MergeAllResults.txt**](https://github.com/SereDef/GenR-run-GWAS/blob/main/4_MergeAllResults.txt) script. This is actually an R script (despite the .txt extention, yes...). You could run this in Rstudio, but we are going to be handlying large datafiles and you will probably run into memory problems (there is only that much allocated RAM per user). So, we saved this R script in .txt format and send it once again to the *que* using the command: 
 ```
 qsub-bin-long Rscript --vanilla 4_MergeAllResults.txt
