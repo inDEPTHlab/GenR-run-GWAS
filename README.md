@@ -15,8 +15,8 @@ Type `gena.erasmusmc.nl` as a Remote host and specify your **microsection number
 
 Let’s have a look at what’s inside (type `ls`). You should see a folder called `GENR3`, that’s containing the genetic files you are going to need. If you don’t see it yet, write an email to data management (datamanagement@erasmusmc.nl) with Marijn in cc. 
 
-> <ins>Note</ins>: **GenR3 or GenR4 release?**
-For this tutorial I will be using GenR3, but there is also another more recent release, GenR4. infomation about these two samples can be found on the info wiki. 
+> <ins>Note</ins> **GenR3 or GenR4 release?** 
+For this tutorial I will be using GenR3, but there is also another more recent release, GenR4. infomation about these two samples can be found on the info wiki {...}
 
 ### Tip #1: keep things tidy!
 The first thing I would do, once you have access to your home folder is setting up a structure for your analyses. You can start by creating a **project folder** inside your home, where you can keep your scripts, phenotype files and results stored neatly. To create a directory, use the command `mkdir` (“make directory”) followed by the folder name. For example, try typing `mkdir dummieGWAS` and then type `ls` again, you should see the new folder appearing in your home. 
@@ -40,6 +40,7 @@ This is where `MobaXterm` will make your life a bit easier. You can use it to im
 
 ### Inspect the genetic files (optional)
 Now let’s nose around the genetic data a little (type `cd ~/GENR3` to move inside the GENR3 folder and `ls` to see what’s inside). For example, we are going to use the data in `Imputed/1000G_PhaseIIIv5/`. Here you will find the `*.vcf` and the `*.info` files for all chromosomes. You can visualize these using e.g., `zcat chr1.dose.vcf.gz | more` (hit `q` when you are done nosing around the vcf file) or `zcat chr1.dose.vcf.gz | head` (to visualize only the first 10 rows of the file). Also, `bcftools query -l chr1.dose.vcf.gz` will list all the participants in the file.
+
 > **So many imputation panels ... which one do I choose?**
 
 ## 1    | Construct your phenotype & covariate files
@@ -87,7 +88,7 @@ In a nutshel, what this does is looping through all chromosomes (i.e., `.vcf` fi
 
 Ok, this may take some time, so you can allow yourself a nice walk / a ~20 min Netflix episolde at this point. You can come back and check the status of your analyses using the command `qstat`. This will print out a list of the *jobs* that are currently being run (`r`) or are waiting in the que (`wq`). If the output of `qstat` is empty you are all done. 
 
-<ins>Note</ins>: analyses have the bad habit of having something wrong with them sometimes. Make sure you inspect the **log files** for any shady warnings going on. For each *job* you have submitted, you will find a couple of those in your project folder: `rvtest.e[...]` and `rvtest.o[...]`. The latter is not super useful but it does provide some contact and websites where you can check the rvtests documentation (although probably faster way to get there is to google rvtest...). Open the first ("e") log file using `cat rvtest.e*somenumber*` (*tip*: if you hit `shift` computers will fill in the numbers for you). If anything goes wrong, this is were you are going to know more about it.
+<ins>Note</ins> Analyses have the bad habit of having something wrong with them sometimes. Make sure you inspect the **log files** for any shady warnings going on. For each *job* you have submitted, you will find a couple of those in your project folder: `rvtest.e[...]` and `rvtest.o[...]`. The latter is not super useful but it does provide some contact and websites where you can check the rvtests documentation (although probably faster way to get there is to google rvtest...). Open the first ("e") log file using `cat rvtest.e*somenumber*` (*tip*: if you hit `shift` computers will fill in the numbers for you). If anything goes wrong, this is were you are going to know more about it.
 
 ## 3.1  | Get HWE and imputation quality (R<sup>2</sup>) information 
 Next, we need to retrieve some important information on Hardy-Weinburgh Equilibium and imputation quality. And that is what [**3_CollectGenotypeInfo.sh**](https://github.com/SereDef/GenR-run-GWAS/blob/main/3_CollectGenotypeInfo.sh) is all about. In your project folder paste the command: 
@@ -96,7 +97,8 @@ plink --bfile ~/GENR3/Genotyped/GENR3-2012 --hardy --out /sourcefiles/GenR
 gzip sourcefiles/GenR.hwe
 ```
 Which uses [plink](https://zzz.bwh.harvard.edu/plink/) and the `GENR3-2012.bed` `.bim` `.fam` files to compute Hardy-Weinburgh Equilibium. 
-> **What is HWE?**
+
+> **What is HWE?** {...}
 
 We then extract the imputation quality information from the `.info` chromosomes files, like this:
 ```
@@ -109,7 +111,7 @@ done
 sed -i '/^$/d' sourcefiles/rsq.txt
 gzip sourcefiles/rsq.txt
 ```
-> **How does imputation work?**
+> **How does imputation work?** {...}
 
 ## 3.2  | Merge results 
 Finally, you may want to merge all of these chromosome-specific result files into a **genome-wide** file that is easier to use and share. This is what the last part of [3_CollectGenotypeInfo.sh](https://github.com/SereDef/GenR-run-GWAS/blob/main/3_CollectGenotypeInfo.sh) does. For example let's merge all results from the main analyses into a `main_autosomal.csv` results file:
