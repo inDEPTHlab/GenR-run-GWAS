@@ -2,7 +2,7 @@
 Hi, you are about to enter the magic circle of people that can run a GWAS, welcome. You are going to need a little bit of UNIX witchery for this one, but if that sounds uninviting, no worries, you will have me (…and google) on your side every step of the way. We are going to use `R` for phenotype preparation and `Rvtest` to run the actual GWAS, but first things first:
 
 ## 0    | Set up access to GENA and to the genetic / phenotype data
-You will need access to our **GENA** server where the genotype files are stored, and of course also permission to access the phenotype data. So, start by sending some emails. Marijn Verkerk (m.verkerk@erasmusmc.nl) will help you create an account on GENA. This will be accessible via remote shell (SSH) using your microsection credentials, but you can also ask for permission to use `MobaXterm` (a SSH client) on your SOM or Mijnwerkplek environment. This will make access a little bit easier and I am going to assume you are using MobaXterm in this tutorial. 
+You will need access to our **GENA** server where the genotype files are stored, and of course also permission to access the phenotype data. So, start by sending some emails. Marijn Verkerk will help you create an account on GENA. Send him an email with Janine Felix and data management (datamanagement@erasmusmc.nl) in cc. Your GENA account will be accessible via remote shell (SSH) using your microsection credentials, but you can also ask for permission to use `MobaXterm` (a SSH client) on your SOM or Mijnwerkplek environment. This will make access a little bit easier and I am going to assume you are using MobaXterm in this tutorial. 
 
 So, once the app becomes available you can launch it.
 
@@ -11,12 +11,12 @@ So, once the app becomes available you can launch it.
 And set up your session:
 <img src="imgs/img2.png" widht="200"/>
 
-Type `gena.erasmusmc.nl` as a Remote host and specify your **microsection number** as username, then type in your password and congrats, you are now inside your home folder. If you type `pwd` ("print working directory") you will see `/home/your microsection number`. 
+Type `gena.erasmusmc.nl` as a Remote host and specify your **microsection number** as username (port=22), then type in your password and congrats, you are now inside your home folder. If you type `pwd` ("print working directory") you will see `/home/your microsection number`. 
 
 Let’s have a look at what’s inside (type `ls`). You should see a folder called `GENR3`, that’s containing the genetic files you are going to need. If you don’t see it yet, write an email to data management (datamanagement@erasmusmc.nl) with Marijn in cc. 
 
 > <ins>Note</ins> **GenR3 or GenR4 release?** 
-For this tutorial I will be using GenR3, but there is also another more recent release, GenR4. infomation about these two samples can be found on the info wiki {...}
+GENR3 and GENR4 are two datasets containing genotyped samples from Generation R. These need to be analyzed separately (as independent samples) because they were run on different arrays. More infomation about these two releases (e.g. QC) can be found on the info wiki {...}. For this tutorial I will be using GenR3 only.
 
 ### Tip #1: keep things tidy!
 The first thing I would do, once you have access to your home folder is setting up a structure for your analyses. You can start by creating a **project folder** inside your home, where you can keep your scripts, phenotype files and results stored neatly. To create a directory, use the command `mkdir` (“make directory”) followed by the folder name. For example, try typing `mkdir dummieGWAS` and then type `ls` again, you should see the new folder appearing in your home. 
@@ -42,9 +42,10 @@ This is where `MobaXterm` will make your life a bit easier. You can use it to im
 Now let’s nose around the genetic data a little (type `cd ~/GENR3` to move inside the GENR3 folder and `ls` to see what’s inside). For example, we are going to use the data in `Imputed/1000G_PhaseIIIv5/`. Here you will find the `*.vcf` and the `*.info` files for all chromosomes. You can visualize these using e.g., `zcat chr1.dose.vcf.gz | more` (hit `q` when you are done nosing around the vcf file) or `zcat chr1.dose.vcf.gz | head` (to visualize only the first 10 rows of the file). Also, `bcftools query -l chr1.dose.vcf.gz` will list all the participants in the file.
 
 > **So many imputation panels ... which one do I choose?**
+The 1000G panel is best option when analyzing the full (ethnically mixed) population. When only analyzing European, you can choose a different panel too. The preferred choice is generally specified in the analysis plan.
 
 ## 1    | Construct your phenotype & covariate files
-While you are waiting for access to the server to be arranged, you can have some fun preparing the phenotype and covariates. You can download most of the Generation R data from the [data wiki](). Together with the files containing your outcome variables of interest you should probably download the most recent **ALLGENERALDATA[...].sav**, and **PCA_Selection_GWAv3[...].sav** or **PCA_Selection_GWAv4[...].sav** files (these refer to GenR3 and GenR4 respectively). 
+While you are waiting for access to the server to be arranged, you can have some fun preparing the phenotype and covariates. You can download most of the Generation R data from the [data wiki](). Together with the files containing your outcome variables of interest you should probably download the most recent **ALLGENERALDATA[...].sav**, and **PCA_Selection_GWAv3[...].sav** or **PCA_Selection_GWAv4[...].sav** files (these refer to GenR3 and GenR4 respectively). Note that, for both GenR3 and 4, there are PCA files referring to the full set and to Europeans only (that you can use if you plan to restrict the analyses to Europeans only).
 
 You can merge and manipulate these using R or any other tool you like and save a dataset (I am going to call it **“phenotype_data.csv”**) that contains the following columns:
 * Your **phenotype** and **covariates** (of course), massaged according to your analysis plan and ready to be used;
@@ -86,7 +87,9 @@ done
 You can find more information about the `rvtest` options [here](http://zhanxw.github.io/rvtests/).
 In a nutshel, what this does is looping through all chromosomes (i.e., `.vcf` files) and tell `rvtest` to run the analysis using the phenotype and covariates files we created in step 1. Then save the output in the appropiate `results/` subfolder, for example `mainanalysis`. 
 
-Ok, this may take some time, so you can allow yourself a nice walk / a ~20 min Netflix episolde at this point. You can come back and check the status of your analyses using the command `qstat`. This will print out a list of the *jobs* that are currently being run (`r`) or are waiting in the que (`wq`). If the output of `qstat` is empty you are all done. 
+Note that, for this tutorial, we are fosucing on **autosomal** analyses only. X and Y chromosomes require specific analyses which are not covered here!
+
+Ok, this may take some time, so you can allow yourself a nice walk / a ~20 min Netflix episode at this point. You can come back and check the status of your analyses using the command `qstat`. This will print out a list of the *jobs* that are currently being run (`r`) or are waiting in the que (`wq`). If the output of `qstat` is empty you are all done. 
 
 <ins>Note</ins> Analyses have the bad habit of having something wrong with them sometimes. Make sure you inspect the **log files** for any shady warnings going on. For each *job* you have submitted, you will find a couple of those in your project folder: `rvtest.e[...]` and `rvtest.o[...]`. The latter is not super useful but it does provide some contact and websites where you can check the rvtests documentation (although probably faster way to get there is to google rvtest...). Open the first ("e") log file using `cat rvtest.e*somenumber*` (*tip*: if you hit `shift` computers will fill in the numbers for you). If anything goes wrong, this is were you are going to know more about it.
 
