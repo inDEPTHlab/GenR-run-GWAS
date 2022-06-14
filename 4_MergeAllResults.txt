@@ -96,7 +96,7 @@ filter_save <- function(input, output) {
 
         # Include only the required columns and save
         # final <- select(final, c(Markername, CHROM, POS, ALT, REF, AF, EFFECT, SE, PVALUE, N_INFORMATIVE, Rsq, Rsid, Genotyped)) # ==> CHANGE THIS
-        final <- select(final,c(Rsid, CHROM, POS, REF, ALT, strand, EFFECT, SE, PVALUE, AF, N_INFORMATIVE, Rsq))
+        final <- select(final,c(Rsid, CHROM, POS, ALT, REF, strand, EFFECT, SE, PVALUE, AF, N_INFORMATIVE, Rsq))
         names(final) <- c("SNPID", "chr", "position", "effect_allele", "other_allele", "strand_genome", "BETA", "SE", "P", "EAF", "n_total", "info_imp") # ==> CHANGE THIS
         message("Saving...") 
         write.table(final, file = output, quote = F, row.names = F)
